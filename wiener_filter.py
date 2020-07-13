@@ -35,6 +35,32 @@ def format_data(x, y, N):
         emg_N_lag.append(y[i+N-1, :])
     return np.asarray(spike_N_lag), np.asarray(emg_N_lag)
 
+def format_data_from_list(x, y, N):
+    if type(x) == np.ndarray:
+        x = [x]
+    if type(y) == np.ndarray:
+        y = [y]
+    x_ = []
+    y_ = []
+    for i in range(len(x)):
+        x_temp, y_temp = format_data(x[i], y[i], N)
+        x_.append(x_temp)
+        y_.append(y_temp)
+    return flatten_list(x_), flatten_list(y_)
+
+def format_data_from_trials(x, y, N):
+    if type(x) == np.ndarray:
+        x = [x]
+    if type(y) == np.ndarray:
+        y = [y]
+    x_ = []
+    y_ = []
+    for i in range(len(x)):
+        x_temp, y_temp = format_data(x[i], y[i], N)
+        x_.append(x_temp)
+        y_.append(y_temp)
+    return flatten_list(x_), flatten_list(y_)
+
 def parameter_fit(x, y, c):
     """
     c : L2 regularization coefficient
@@ -50,7 +76,7 @@ def parameter_fit(x, y, c):
     x_plus_bias = np.c_[np.ones((np.size(x, 0), 1)), x]
     R = c * np.eye( x_plus_bias.shape[1] )
     R[0,0] = 0;
-    temp = np.linalg.inv(np.dot(x_plus_bias.T, x_plus_bias) + R)
+    temp = np.linalg.inv(np.dot(x_plus_bias.T, x_plus_bias) + R)# + 0.0001*np.random.randn(R.shape[0], R.shape[1])
     temp2 = np.dot(temp,x_plus_bias.T)
     H = np.dot(temp2,y)
     return H
