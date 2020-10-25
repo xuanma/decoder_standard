@@ -135,13 +135,16 @@ def test_wiener_filter(x, H):
     y_pred = np.dot(x_plus_bias, H)
     return y_pred    
       
-def nonlinearity(p, y):
-    return p[0]+p[1]*y+p[2]*y*y
+def nonlinearity(p, y, nonlinear_type = 'poly'):
+    if nonlinear_type == 'poly':
+        return p[0]+p[1]*y+p[2]*y*y
+    elif nonlinear_type == 'sigmoid'
+        return 1/( 1+np.exp(-1*p[0]*(y-p[1])) )
     
-def nonlinearity_residue(p, y, z):
-    return (nonlinearity(p, y) - z).reshape((-1,))
+def nonlinearity_residue(p, y, z, nonlinear_type = 'poly'):
+    return (nonlinearity(p, y, nonlinear_type) - z).reshape((-1,))
 
-def train_nonlinear_wiener_filter(x, y, l2 = 0):
+def train_nonlinear_wiener_filter(x, y, l2 = 0, nonlinear_type = 'poly'):
     """
     To train a nonlinear decoder
     x: input data, e.g. neural firing rates
@@ -158,10 +161,14 @@ def train_nonlinear_wiener_filter(x, y, l2 = 0):
         best_c = 0
     H_reg = parameter_fit( x, y, best_c )
     y_pred = test_wiener_filter(x, H_reg)
-    res_lsq = least_squares(nonlinearity_residue, [0.1,0.1,0.1], args = (y_pred, y))
+    if nonlinear_type == 'poly':
+        init = [0.1, 0.1, 0.1]
+    elif nonlinear_type == 'sigmoid':
+        init = [10, 0.5]
+    res_lsq = least_squares(nonlinearity_residue, init, args = (y_pred, y, nonlinear_type))
     return H_reg, res_lsq
 
-def test_nonlinear_wiener_filter(x, H, res_lsq):  
+def test_nonlinear_wiener_filter(x, H, res_lsq, nonlinear_type = 'poly'):  
     """
     To get predictions from input data x with nonlinear decoder
     x: input data
@@ -169,7 +176,7 @@ def test_nonlinear_wiener_filter(x, H, res_lsq):
     res_lsq: nonlinear components obtained by training
     """
     y1 = test_wiener_filter(x, H)
-    y2 = nonlinearity(res_lsq.x, y1)
+    y2 = nonlinearity(res_lsq.x, y1, nonlinear_type)
     return y2    
     
     
