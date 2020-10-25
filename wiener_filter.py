@@ -139,7 +139,7 @@ def nonlinearity(p, y, nonlinear_type = 'poly'):
     if nonlinear_type == 'poly':
         return p[0]+p[1]*y+p[2]*y*y
     elif nonlinear_type == 'sigmoid':
-        return 1/( 1+np.exp(-1*p[0]*(y-p[1])) )
+        return 1/( 1+np.exp(-10*(y-p[0])) )
     
 def nonlinearity_residue(p, y, z, nonlinear_type = 'poly'):
     return (nonlinearity(p, y, nonlinear_type) - z).reshape((-1,))
@@ -164,7 +164,7 @@ def train_nonlinear_wiener_filter(x, y, l2 = 0, nonlinear_type = 'poly'):
     if nonlinear_type == 'poly':
         init = [0.1, 0.1, 0.1]
     elif nonlinear_type == 'sigmoid':
-        init = [10, 0.5]
+        init = [0.5]
     res_lsq = least_squares(nonlinearity_residue, init, args = (y_pred, y, nonlinear_type))
     return H_reg, res_lsq
 
