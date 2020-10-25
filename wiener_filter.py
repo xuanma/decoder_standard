@@ -138,7 +138,7 @@ def test_wiener_filter(x, H):
 def nonlinearity(p, y, nonlinear_type = 'poly'):
     if nonlinear_type == 'poly':
         return p[0]+p[1]*y+p[2]*y*y
-    elif nonlinear_type == 'sigmoid'
+    elif nonlinear_type == 'sigmoid':
         return 1/( 1+np.exp(-1*p[0]*(y-p[1])) )
     
 def nonlinearity_residue(p, y, z, nonlinear_type = 'poly'):
