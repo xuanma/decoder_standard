@@ -3,6 +3,9 @@ from sklearn.metrics import r2_score
 from sklearn.model_selection import KFold
 from scipy.optimize import least_squares
 
+def relu(x):
+    return (np.maximum(0, x))
+
 def flatten_list(X):
     """
     Converting list containing multiple ndarrays into a large ndarray
@@ -76,7 +79,7 @@ def parameter_fit(x, y, c):
     x_plus_bias = np.c_[np.ones((np.size(x, 0), 1)), x]
     R = c * np.eye( x_plus_bias.shape[1] )
     R[0,0] = 0;
-    temp = np.linalg.inv(np.dot(x_plus_bias.T, x_plus_bias) + R)# + 0.0001*np.random.randn(R.shape[0], R.shape[1])
+    temp = np.linalg.inv(np.dot(x_plus_bias.T, x_plus_bias) + R)
     temp2 = np.dot(temp,x_plus_bias.T)
     H = np.dot(temp2,y)
     return H
@@ -161,12 +164,15 @@ def train_nonlinear_wiener_filter(x, y, l2 = 0, nonlinear_type = 'poly'):
         best_c = 0
     H_reg = parameter_fit( x, y, best_c )
     y_pred = test_wiener_filter(x, H_reg)
-    if nonlinear_type == 'poly':
-        init = [0.1, 0.1, 0.1]
-    elif nonlinear_type == 'sigmoid':
-        init = [0.5]
-    res_lsq = least_squares(nonlinearity_residue, init, args = (y_pred, y, nonlinear_type))
-    return H_reg, res_lsq
+    if nonlinear_type == 'relu':
+        return H_reg
+    else:    
+        if nonlinear_type == 'poly':
+            init = [0.1, 0.1, 0.1]
+        elif nonlinear_type == 'sigmoid':
+            init = [0.5]
+        res_lsq = least_squares(nonlinearity_residue, init, args = (y_pred, y, nonlinear_type))
+        return H_reg, res_lsq
 
 def test_nonlinear_wiener_filter(x, H, res_lsq, nonlinear_type = 'poly'):  
     """
@@ -176,7 +182,10 @@ def test_nonlinear_wiener_filter(x, H, res_lsq, nonlinear_type = 'poly'):
     res_lsq: nonlinear components obtained by training
     """
     y1 = test_wiener_filter(x, H)
-    y2 = nonlinearity(res_lsq.x, y1, nonlinear_type)
+    if nonlinear_type == 'relu':
+        y2 = relu(y1)
+    else:
+        y2 = nonlinearity(res_lsq.x, y1, nonlinear_type)
     return y2    
     
     
