@@ -18,51 +18,89 @@ def flatten_list(X):
         Y = np.vstack((Y, each))
     return Y
 
-def vaf(x,xhat):
+def format_data(x, y, n_lag):
     """
-    Calculating vaf value
-    x: actual values, a numpy array
-    xhat: predicted values, a numpy array
+    To reshape the numpy arrays for Wiener filter fitting
+    Parameters
+        x: the input data for Wiener filter fitting, an ndarray
+        y: the output data for Wiener filter fitting, an ndarray
+        n_lag: the number of time lags, an int number
+    Returns:
+        out1: the reshaped array for x, an ndarray
+        out2: the trimmed array for y, an ndarray
     """
-    x = x - x.mean(axis=0)
-    xhat = xhat - xhat.mean(axis=0)
-    return (1-(np.sum(np.square(x - xhat))/np.sum(np.square(x))))
+    x_ = [x[i:i+n_lag, :].reshape(n_lag*x.shape[1]) for i in range(x.shape[0]-n_lag+1)]
+    return np.asarray(x_), y[n_lag-1:, :]
 
-def format_data(x, y, N):
-    spike_N_lag = []
-    emg_N_lag = []
-    for i in range(np.size(x, 0) - N):
-        temp = x[i:i+N, :]
-        temp = temp.reshape((np.size(temp)))
-        spike_N_lag.append(temp)
-        emg_N_lag.append(y[i+N-1, :])
-    return np.asarray(spike_N_lag), np.asarray(emg_N_lag)
-
-def format_data_from_list(x, y, N):
+def format_data_from_list(x, y, n_lag):
     if type(x) == np.ndarray:
         x = [x]
     if type(y) == np.ndarray:
         y = [y]
-    x_ = []
-    y_ = []
-    for i in range(len(x)):
-        x_temp, y_temp = format_data(x[i], y[i], N)
-        x_.append(x_temp)
-        y_.append(y_temp)
-    return flatten_list(x_), flatten_list(y_)
+    x_, y_ = [], []
+    for each in zip(x, y):
+        temp = format_data(each[0], each[1], n_lag)
+        x_.append(temp[0])
+        y_.append(temp[1])
+    return np.concatenate(x_), np.concatenate(y_)
 
-def format_data_from_trials(x, y, N):
+def format_data_from_trials(x, y, n_lag):
+    """
+    To reshape lists containing multiple trials into a big array so as to form 
+    the training data for Wiener filter fitting
+    Parameters
+        x: a list containing multiple trials, as the inputs for Wiener filter fitting
+        y: a list containing multiple trials, as the outputs for Wiener filter fitting
+        n_lag: the number of time lags, an int number
+    Returns
+        out1: the reshaped data for the input list x, an ndarray
+        out2: the reshaped data for the input list y, an ndarray
+    """
     if type(x) == np.ndarray:
         x = [x]
     if type(y) == np.ndarray:
         y = [y]
-    x_ = []
-    y_ = []
-    for i in range(len(x)):
-        x_temp, y_temp = format_data(x[i], y[i], N)
-        x_.append(x_temp)
-        y_.append(y_temp)
-    return flatten_list(x_), flatten_list(y_)
+    x_, y_ = [], []
+    for each in zip(x, y):
+        temp = format_data(each[0], each[1], n_lag)
+        x_.append(temp[0])
+        y_.append(temp[1])
+    return np.concatenate(x_), np.concatenate(y_)
+
+def format_data_rnn(x, y, n_lag):
+    """
+    Here x, y are arrays for a single trial, not lists, like neural data and EMGs
+    If y is [], the function will only take care of the x input
+    """
+    x_ = [x[i:i+n_lag, :] for i in range(x.shape[0]-n_lag+1)]
+    if len(y)>0:
+        return np.asarray(x_), y[n_lag-1:, :]
+    else:
+        return np.asarray(x_)
+    
+
+def format_data_rnn_from_trials(x, y, n_lag):
+    """
+    Here x, y are lists, for multiple trials. They can be arrays, as the function checks
+    the type at the beginning.
+    y can be empty ([]), if so the function will only take care of the x input
+    """
+    if type(x) == np.ndarray:
+        x = [x]
+    if type(y) == np.ndarray:
+        y = [y]
+    x_, y_ = [], []
+    if len(y) > 0:
+        for each in zip(x, y):
+            temp = format_data_rnn(each[0], each[1], n_lag)
+            x_.append(temp[0])
+            y_.append(temp[1])
+        return np.concatenate(x_), np.concatenate(y_)
+    else:
+        for each in x:
+            temp = format_data_rnn(each, [], n_lag)
+            x_.append(temp)
+        return np.concatenate(x_)
 
 def parameter_fit(x, y, c):
     """
@@ -123,6 +161,7 @@ def train_wiener_filter(x, y, l2 = 0):
         kfolds = 4
         kf = KFold( n_splits = kfolds )
         best_c = parameter_fit_with_sweep( x, y, C, kf )
+        print(best_c)
     else:
         best_c = 0
     H_reg = parameter_fit( x, y, best_c )
@@ -160,6 +199,7 @@ def train_nonlinear_wiener_filter(x, y, l2 = 0, nonlinear_type = 'poly'):
         kfolds = 4
         kf = KFold( n_splits = kfolds )
         best_c = parameter_fit_with_sweep( x, y, C, kf )
+        print(best_c)
     else:
         best_c = 0
     H_reg = parameter_fit( x, y, best_c )
