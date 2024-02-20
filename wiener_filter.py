@@ -142,16 +142,21 @@ def test_wiener_filter(x, H):
     y_pred = np.dot(x_plus_bias, H)
     return y_pred    
       
-def nonlinearity(p, y, nonlinear_type = 'poly'):
+def nonlinearity(p, y, nonlinear_type = 'poly2'):
     if nonlinear_type == 'poly':
+        print('Version updated, please specify if you need poly 2 or poly 3')
+        return None
+    elif nonlinear_type == 'poly2':
         return p[0]+p[1]*y+p[2]*y*y
+    elif nonlinear_type == 'poly3':
+        return p[0]+p[1]*y+p[2]*y**2+p[3]*y**3
     elif nonlinear_type == 'sigmoid':
         return 1/( 1+np.exp(-10*(y-p[0])) )
     
-def nonlinearity_residue(p, y, z, nonlinear_type = 'poly'):
+def nonlinearity_residue(p, y, z, nonlinear_type = 'poly2'):
     return (nonlinearity(p, y, nonlinear_type) - z).reshape((-1,))
 
-def train_nonlinear_wiener_filter(x, y, l2 = 0, nonlinear_type = 'poly'):
+def train_nonlinear_wiener_filter(x, y, l2 = 0, nonlinear_type = 'poly2'):
     """
     To train a nonlinear decoder
     x: input data, e.g. neural firing rates
@@ -171,15 +176,20 @@ def train_nonlinear_wiener_filter(x, y, l2 = 0, nonlinear_type = 'poly'):
     y_pred = test_wiener_filter(x, H_reg)
     if nonlinear_type == 'relu':
         return H_reg
-    else:    
+    else:
         if nonlinear_type == 'poly':
+            print('Version updated. Please specify if you want poly-2 or poly-3')
+            init = [0, 0]
+        elif nonlinear_type == 'poly2':
             init = [0.1, 0.1, 0.1]
+        elif nonlinear_type == 'poly3':
+            init = [0.1, 0.1, 0.1, 0.1]
         elif nonlinear_type == 'sigmoid':
             init = [0.5]
         res_lsq = least_squares(nonlinearity_residue, init, args = (y_pred, y, nonlinear_type))
         return H_reg, res_lsq
 
-def test_nonlinear_wiener_filter(x, H, res_lsq, nonlinear_type = 'poly'):  
+def test_nonlinear_wiener_filter(x, H, res_lsq, nonlinear_type = 'poly2'):  
     """
     To get predictions from input data x with nonlinear decoder
     x: input data

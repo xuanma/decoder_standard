@@ -213,20 +213,3 @@ def test_rnn_decoder(net, test_x, use_cuda=False):
         if use_cuda:
             pred = pred.cpu()
     return pred.data.numpy()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
